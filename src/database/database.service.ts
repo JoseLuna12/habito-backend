@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client } from 'faunadb';
 @Injectable()
 export class DatabaseService {
-  private serverkey = 'fnAFI220AgACWLtpjKze-Ar8a4ulO0rw4ItMhxnb';
+  constructor(private configService: ConfigService) {}
+
+  private serverkey = this.configService.get<string>('FAUNA_SERVER_SECRET');
   private faunaClient: Client | null = null;
 
   getFaunaInstance(): Client {
