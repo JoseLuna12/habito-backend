@@ -23,4 +23,14 @@ describe('DatabaseService', () => {
     const ping = await fauna.ping();
     expect(ping).toBe('Scope write is OK');
   });
+
+  it('should create a new collection', async () => {
+    const newCollection: any = await service.createCollection('NewCollection');
+    expect(newCollection.name).toBe('NewCollection');
+  });
+
+  it('should delete the new collection', async () => {
+    const newCollection: any = await service.deleteCollection('NewCollection');
+    expect(newCollection.name).toBe('NewCollection');
+  });
 });
