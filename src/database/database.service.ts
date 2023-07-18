@@ -20,4 +20,30 @@ export class DatabaseService {
       },
     });
   }
+
+  getTasksByDay(day: string, user: string): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      where: {
+        owner: {
+          email: user,
+        },
+        time: day,
+      },
+    });
+  }
+
+  getTasksByUser(user: string, take = 100, skip = 0): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      where: {
+        owner: {
+          email: user,
+        },
+      },
+      orderBy: {
+        createdAt: Prisma.SortOrder.desc,
+      },
+      take,
+      skip,
+    });
+  }
 }
