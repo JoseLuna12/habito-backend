@@ -17,13 +17,17 @@ export class AuthenticationController {
 
   @Post('/new')
   @UsePipes(new JaiValidationPipe(createUserSchema))
-  async newUser(@Body() newUser: UserDto) {
+  async newUser(@Body() newUser: UserDto, @Res() res: Response) {
     const user = await this.authService.createUser({
       name: newUser.name,
       email: newUser.email,
       password: newUser.password,
     });
-    return user;
+    if (user.error) {
+      throw new HttpException(`${user.error} ${user.description}`, user.status);
+    }
+
+    res.status(user.status).json(user.data);
   }
 
   @Post('/login')
@@ -43,6 +47,6 @@ export class AuthenticationController {
         credentials.status,
       );
     }
-    res.status(credentials.status).json({ secret: credentials.secret });
+    res.status(credentials.status).json(credentials);
   }
 }

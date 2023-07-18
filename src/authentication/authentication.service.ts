@@ -1,60 +1,89 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import * as q from 'faunadb';
 import { UserDto } from './dto/user.dto';
+import * as bcrypt from 'bcrypt';
+import { User } from '@prisma/client';
+import { TokensService } from 'src/tokens/tokens.service';
+
+type AuthenticationResponse<T> = {
+  data?: T;
+  secret?: string;
+  error?: string;
+  description?: string;
+  status: HttpStatus;
+};
 
 @Injectable()
 export class AuthenticationService {
-  constructor(private fauna: DatabaseService) {}
+  constructor(
+    private database: DatabaseService,
+    private tokenService: TokensService,
+  ) {}
+  private static saltRounds = 10;
 
-  private client = this.fauna.getFaunaInstance();
+  async createUser(user: UserDto): Promise<AuthenticationResponse<User>> {
+    try {
+      const userExists = await this.database.getUserByEmail(user.email);
 
-  createUser(user: UserDto) {
-    return this.client.query(
-      q.Create(q.Collection('users'), {
-        credentials: { password: user.password },
-        data: { email: user.email, name: user.name },
-      }),
-    );
-  }
-
-  async getUserByEmail(email: string) {
-    const { data }: any = await this.fauna.callIndex(
-      'get_users_by_email',
-      email,
-    );
-
-    return data[0];
-  }
-
-  async loginUser(user: Pick<UserDto, 'email' | 'password'>) {
-    const userRef = await this.getUserByEmail(user.email);
-
-    if (userRef) {
-      try {
-        const { secret }: any = await this.client.query(
-          q.Login(userRef, { password: user.password }),
-        );
-        return { secret, error: '', description: '', status: HttpStatus.OK };
-      } catch (err) {
+      if (userExists) {
         return {
-          secret: '',
-          error: err.message,
-          description: err.errors()[0].description,
-          status: HttpStatus.FORBIDDEN,
+          error: 'User already exists',
+          description: 'Email already exits',
+          status: HttpStatus.BAD_REQUEST,
         };
       }
-    }
 
-    return {
-      secret: '',
-      error: 'not found',
-      description: 'email does not exists',
-      status: HttpStatus.NOT_FOUND,
-    };
+      const salt = await bcrypt.genSalt(AuthenticationService.saltRounds);
+      const hashedPassword = await bcrypt.hash(user.password, salt);
+
+      const newUser = await this.database.createUser({
+        ...user,
+        password: hashedPassword,
+      });
+
+      return {
+        data: newUser,
+        status: HttpStatus.CREATED,
+      };
+    } catch (err) {
+      return {
+        error: 'unknown',
+        description: 'Error',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+      };
+    }
   }
 
-  deleteUser(ref: string) {
-    return this.client.query(q.Delete(ref));
+  async loginUser(
+    user: Pick<UserDto, 'email' | 'password'>,
+  ): Promise<AuthenticationResponse<Omit<User, 'password'>>> {
+    const userRef = await this.database.getUserByEmail(user.email);
+
+    if (!userRef) {
+      return {
+        error: 'not found',
+        description: 'email does not exists',
+        status: HttpStatus.NOT_FOUND,
+      };
+    }
+
+    const { password, ...userReturned } = userRef;
+    const matchPassword = await bcrypt.compare(user.password, password);
+
+    if (!matchPassword) {
+      return {
+        error: 'Bad credentials',
+        description: 'Email or password incorrect',
+        status: HttpStatus.FORBIDDEN,
+      };
+    }
+
+    const token = this.tokenService.generateToken(userReturned);
+
+    return {
+      data: userReturned,
+      secret: token,
+      status: HttpStatus.OK,
+    };
   }
 }
