@@ -12,11 +12,24 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int      @id @unique @default(autoincrement())
   createdAt DateTime @default(now())
   name      String   @db.VarChar(255)
   email     String   @unique
   password  String
+  tasks     Task[]
 
   @@index([id, email])
+}
+
+model Task {
+  id        Int      @id @unique @default(autoincrement())
+  createdAt DateTime @default(now())
+  name      String   @db.VarChar(255)
+  note      String?  @db.VarChar(255)
+  time      String?  @db.VarChar(10)
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId   Int
+
+  @@index([ownerId, id, time])
 }
