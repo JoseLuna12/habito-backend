@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, Task, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class DatabaseService {
@@ -7,6 +7,10 @@ export class DatabaseService {
 
   createUser(data: Prisma.UserCreateInput): Promise<User> {
     return this.prisma.user.create({ data });
+  }
+
+  createTask(data: Prisma.TaskCreateInput): Promise<Task> {
+    return this.prisma.task.create({ data });
   }
 
   getUserByEmail(email: string): Promise<User | null> {
