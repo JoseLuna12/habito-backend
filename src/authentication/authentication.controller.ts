@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { Response } from 'express';
-import { UserValidationPipe } from './validation.pipe';
+import { JaiValidationPipe } from '../pipes/validation.pipe';
 import { UserDto, createUserSchema, loginUserSchema } from './dto/user.dto';
 
 @Controller('authentication')
@@ -16,7 +16,7 @@ export class AuthenticationController {
   constructor(private authService: AuthenticationService) {}
 
   @Post('/new')
-  @UsePipes(new UserValidationPipe(createUserSchema))
+  @UsePipes(new JaiValidationPipe(createUserSchema))
   async newUser(@Body() newUser: UserDto) {
     const user = await this.authService.createUser({
       name: newUser.name,
@@ -27,7 +27,7 @@ export class AuthenticationController {
   }
 
   @Post('/login')
-  @UsePipes(new UserValidationPipe(loginUserSchema))
+  @UsePipes(new JaiValidationPipe(loginUserSchema))
   async login(
     @Body() request: Pick<UserDto, 'email' | 'password'>,
     @Res() res: Response,
@@ -43,7 +43,6 @@ export class AuthenticationController {
         credentials.status,
       );
     }
-
     res.status(credentials.status).json({ secret: credentials.secret });
   }
 }

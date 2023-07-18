@@ -5,7 +5,9 @@ import {
   Collection,
   CreateCollection,
   CreateIndex,
+  CurrentIdentity,
   Delete,
+  Get,
   Index,
   Match,
   Paginate,
@@ -17,7 +19,10 @@ export class DatabaseService {
   private serverkey = this.configService.get<string>('FAUNA_SERVER_SECRET');
   private faunaClient: Client | null = null;
 
-  getFaunaInstance(): Client {
+  getFaunaInstance(userToken?: string): Client {
+    if (userToken) {
+      return new Client({ secret: userToken });
+    }
     if (this.faunaClient != null) {
       return this.faunaClient;
     }
@@ -38,7 +43,7 @@ export class DatabaseService {
   createIndex(
     collection: string,
     unique: boolean,
-    data: { name: string; terms: string[][]; values: string[][] },
+    data: { name: string; terms: string[][]; values?: string[][] },
   ) {
     const client = this.getFaunaInstance();
     return client.query(
@@ -51,7 +56,7 @@ export class DatabaseService {
             field: term,
           };
         }),
-        values: data.values.map((field) => {
+        values: data.values?.map((field) => {
           return {
             field: field,
           };
@@ -68,6 +73,14 @@ export class DatabaseService {
   callIndex(index: string, value: string) {
     const client = this.getFaunaInstance();
     return client.query(Paginate(Match(Index(index), value)));
+  }
+
+  async getIdentityFromClient(userClient: Client) {
+    const userRef = await userClient.query(CurrentIdentity());
+    if (userRef) {
+      return userClient.query(Get(userRef));
+    }
+    return {};
   }
 
   async seedUsers() {

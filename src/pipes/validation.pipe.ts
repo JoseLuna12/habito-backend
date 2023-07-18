@@ -7,7 +7,7 @@ import {
 import { ObjectSchema } from 'joi';
 
 @Injectable()
-export class UserValidationPipe implements PipeTransform {
+export class JaiValidationPipe implements PipeTransform {
   constructor(private schema: ObjectSchema) {}
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   transform(value: any, _metadata: ArgumentMetadata) {
