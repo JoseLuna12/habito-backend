@@ -9,9 +9,13 @@ export const createTaskSchema = Joi.object({
 }).options({ abortEarly: false });
 
 export const updateTaskSchema = Joi.object({
-  id: Joi.number().required(),
+  id: Joi.number().integer().options({ convert: false }).required(),
   name: Joi.string().optional(),
   note: Joi.string().optional(),
+}).options({ abortEarly: false });
+
+export const deleteTaskSchema = Joi.object({
+  taskId: Joi.number().integer().options({ convert: false }).required(),
 }).options({ abortEarly: false });
 
 export interface TaskDto {

@@ -8,6 +8,7 @@ import {
   Res,
   HttpException,
   Put,
+  Delete,
 } from '@nestjs/common';
 import { RoutinesService } from './routines.service';
 import { AuthenticationGuard } from 'src/guards/Authentication.guard';
@@ -17,6 +18,8 @@ import {
   createRoutineEschema,
   createRoutineFromTemplateSchema,
   createTemplateFromRoutineSchema,
+  deleteRoutineSchema,
+  deleteTemplateSchema,
 } from './dto/routine.dto';
 import { Response } from 'express';
 
@@ -39,6 +42,42 @@ export class RoutinesController {
       );
     }
     res.status(newRoutine.status).json(newRoutine.data);
+  }
+
+  @Delete('routine')
+  @UsePipes(new JaiValidationPipe(deleteRoutineSchema))
+  async deleteRoutine(
+    @Headers('user-id') userId: number,
+    @Body() body: { routineId: number },
+    @Res() res: Response,
+  ) {
+    const routine = await this.service.deleteRoutine(body.routineId, userId);
+    if (routine.error) {
+      throw new HttpException(
+        `${routine.error} ${routine.message}`,
+        routine.status,
+      );
+    }
+
+    res.status(routine.status).json(routine.data);
+  }
+
+  @Delete('template')
+  @UsePipes(new JaiValidationPipe(deleteTemplateSchema))
+  async deleteTemplate(
+    @Headers('user-id') userId: number,
+    @Body() body: { templateId: number },
+    @Res() res: Response,
+  ) {
+    const template = await this.service.deleteTemplate(body.templateId, userId);
+    if (template.error) {
+      throw new HttpException(
+        `${template.error} ${template.message}`,
+        template.status,
+      );
+    }
+
+    res.status(template.status).json(template.data);
   }
 
   @Put()

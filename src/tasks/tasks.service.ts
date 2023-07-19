@@ -14,6 +14,22 @@ type TaskResponse<T> = {
 export class TasksService {
   constructor(private database: DatabaseService) {}
 
+  async deleteTask(task: number, user: number): Promise<TaskResponse<Task>> {
+    try {
+      const deletedTask = await this.database.deleteTask(task, user);
+      return {
+        data: deletedTask,
+        status: HttpStatus.OK,
+      };
+    } catch (err) {
+      return {
+        error: `${err.name}:`,
+        message: 'Could not delete task',
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
+
   async updateTask(
     task: Partial<TaskDto> & { id: number },
     user: string,

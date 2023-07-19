@@ -24,7 +24,7 @@ export class AuthorizationTokenService {
       if (!matchedPasswords) {
         return {
           error: 'Incorrect credentials',
-          message: 'Password does not exists',
+          message: 'Password does not match',
           status: HttpStatus.FORBIDDEN,
         };
       }

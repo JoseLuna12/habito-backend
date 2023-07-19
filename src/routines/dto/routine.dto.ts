@@ -27,6 +27,14 @@ export const createRoutineFromTemplateSchema = Joi.object({
     .required(),
 }).options({ abortEarly: false });
 
+export const deleteRoutineSchema = Joi.object({
+  routineId: Joi.number().integer().options({ convert: false }).required(),
+}).options({ abortEarly: false });
+
+export const deleteTemplateSchema = Joi.object({
+  templateId: Joi.number().integer().options({ convert: false }).required(),
+}).options({ abortEarly: false });
+
 export interface RoutineDto {
   name: string;
   tasks: TaskDto[];

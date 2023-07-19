@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpException,
@@ -13,7 +14,12 @@ import {
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { JaiValidationPipe } from 'src/pipes/validation.pipe';
-import { TaskDto, createTaskSchema, updateTaskSchema } from './dto/task.dto';
+import {
+  TaskDto,
+  createTaskSchema,
+  deleteTaskSchema,
+  updateTaskSchema,
+} from './dto/task.dto';
 import { Response } from 'express';
 import { AuthenticationGuard } from 'src/guards/Authentication.guard';
 import { GetTaskValidation } from 'src/pipes/get-tasks.validation.pipe';
@@ -30,6 +36,21 @@ export class TasksController {
     @Res() res: Response,
   ) {
     const task = await this.service.updateTask(body, email);
+    if (task.error) {
+      throw new HttpException(`${task.error} ${task.message}`, task.status);
+    }
+
+    res.status(task.status).send(task.data);
+  }
+
+  @Delete()
+  @UsePipes(new JaiValidationPipe(deleteTaskSchema))
+  async deleteTask(
+    @Headers('user-id') id: number,
+    @Body() body: { taskId: number },
+    @Res() res: Response,
+  ) {
+    const task = await this.service.deleteTask(body.taskId, id);
     if (task.error) {
       throw new HttpException(`${task.error} ${task.message}`, task.status);
     }

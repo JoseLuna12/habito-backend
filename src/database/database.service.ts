@@ -1,6 +1,13 @@
 // 'use strict';
 import { Injectable } from '@nestjs/common';
-import { AuthorizationToken, Prisma, Task, User } from '@prisma/client';
+import {
+  AuthorizationToken,
+  Prisma,
+  Task,
+  Template,
+  User,
+  routine,
+} from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { nanoid } from 'nanoid';
 import { RoutineDto } from 'src/routines/dto/routine.dto';
@@ -62,8 +69,16 @@ export class DatabaseService {
     return this.prisma.user.create({ data });
   }
 
+  findUserByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
   createTask(data: Prisma.TaskCreateInput): Promise<Task> {
     return this.prisma.task.create({ data });
+  }
+
+  deleteTask(id: number, user: number): Promise<Task> {
+    return this.prisma.task.delete({ where: { id, AND: { ownerId: user } } });
   }
 
   getUserByEmail(email: string): Promise<User | null> {
@@ -174,6 +189,18 @@ export class DatabaseService {
       include: {
         tasks: true,
       },
+    });
+  }
+
+  deleteRoutine(routineId: number, user: number): Promise<routine> {
+    return this.prisma.routine.delete({
+      where: { id: routineId, AND: { ownerId: user } },
+    });
+  }
+
+  deleteTemplate(templateId: number, user: number): Promise<Template> {
+    return this.prisma.template.delete({
+      where: { id: templateId, AND: { ownerId: user } },
     });
   }
 

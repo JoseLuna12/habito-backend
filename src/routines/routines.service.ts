@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { RoutineDto } from './dto/routine.dto';
+import { Template, routine } from '@prisma/client';
 
 type RoutineResponse<T> = {
   data?: T;
@@ -31,6 +32,51 @@ export class RoutinesService {
       return {
         error: `${err.name}:`,
         message: 'Could not create routine',
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
+
+  async deleteRoutine(
+    routineId: number,
+    user: number,
+  ): Promise<RoutineResponse<routine>> {
+    try {
+      const deletedRoutine = await this.database.deleteRoutine(routineId, user);
+      if (deletedRoutine) {
+        return {
+          data: deletedRoutine,
+          status: HttpStatus.OK,
+        };
+      }
+    } catch (err) {
+      return {
+        error: `${err.name}:`,
+        message: 'Could not delete routine',
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
+
+  async deleteTemplate(
+    templateId: number,
+    user: number,
+  ): Promise<RoutineResponse<Template>> {
+    try {
+      const deletedTemplate = await this.database.deleteTemplate(
+        templateId,
+        user,
+      );
+      if (deletedTemplate) {
+        return {
+          data: deletedTemplate,
+          status: HttpStatus.OK,
+        };
+      }
+    } catch (err) {
+      return {
+        error: `${err.name}:`,
+        message: 'Could not delete template',
         status: HttpStatus.BAD_REQUEST,
       };
     }

@@ -38,6 +38,15 @@ export class AuthenticationService {
     }
 
     if (user.email && user.authorization) {
+      const emailExists = await this.database.findUserByEmail(user.email);
+      if (emailExists) {
+        return {
+          error: 'email already in use:',
+          message: `email '${emailExists.email}' is already taken`,
+          status: HttpStatus.BAD_REQUEST,
+        };
+      }
+
       const permission = await this.authorizationToken.checkAuthorizationToken(
         user.id,
         user.authorization,
