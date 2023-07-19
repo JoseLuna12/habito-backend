@@ -29,7 +29,6 @@ export class AuthenticationService {
       authorization?: string;
     },
   ): Promise<AuthenticationResponse<{ id: number }>> {
-    console.log({ user });
     if (user.email && !user.authorization) {
       return {
         error: 'Can not update',
@@ -62,6 +61,7 @@ export class AuthenticationService {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { authorization, ...userData } = user;
 
       const { id: updatedId } = await this.database.updateUser(userData);
@@ -72,7 +72,6 @@ export class AuthenticationService {
         };
       }
     } catch (err) {
-      console.log(err);
       return {
         error: `${err.name}:`,
         message: 'Could not update user',

@@ -1,5 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { AuthenticationService } from 'src/authentication/authentication.service';
 import { DatabaseService } from 'src/database/database.service';
 import * as bcrypt from 'bcrypt';
 
@@ -48,11 +47,28 @@ export class AuthorizationTokenService {
     user: number,
     token: string,
   ): Promise<AuthTokenResponse<{ permissionGranted: boolean }>> {
+    const now = new Date();
+
     try {
-      const t = await this.database.getAuthorizationToken(user, token);
-      console.log({ t });
-      if (t) {
-        await this.database.invalidateAuthorizationToken(t.token);
+      const databaseToken = await this.database.getAuthorizationToken(
+        user,
+        token,
+      );
+
+      if (databaseToken) {
+        await this.database.invalidateAuthorizationToken(databaseToken.token);
+        // const tokenTime = new Date(databaseToken.expire);
+        const isExpired = databaseToken.expire.getTime() - now.getTime() < 0;
+
+        console.log({ isExpired, dbTime: databaseToken.expire, now: now });
+        if (isExpired) {
+          return {
+            error: 'Permission not granted',
+            message: 'Permission tonken is expired',
+            status: HttpStatus.FORBIDDEN,
+          };
+        }
+
         return {
           data: { permissionGranted: true },
           status: HttpStatus.ACCEPTED,

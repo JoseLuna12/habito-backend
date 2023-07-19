@@ -9,7 +9,7 @@ export class DatabaseService {
 
   generateAuthorizationToken(userId: number): Promise<AuthorizationToken> {
     const time = new Date();
-    time.setHours(time.getHours() + 4);
+    time.setHours(time.getHours() + 1);
 
     const token = nanoid(30);
 
