@@ -29,37 +29,51 @@ model User {
   email              String               @unique
   password           String
   tasks              Task[]
-  rountine           rountine[]
+  routines           routine[]
   AuthorizationToken AuthorizationToken[]
+  Templates          Template[]
 
   @@index([id, email])
 }
 
-model rountine {
-  id         Int      @id @unique @default(autoincrement())
-  createdAt  DateTime @default(now())
-  name       String?  @db.VarChar(255)
-  createdBy  User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+model Template {
+  id        Int      @id @unique @default(autoincrement())
+  createdAt DateTime @default(now())
+  createdBy User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId   Int
+  routine   routine  @relation(fields: [routineId], references: [id])
+  routineId Int      @unique
+
+  @@index([ownerId, id])
+  @@index([routineId])
+}
+
+model routine {
+  id         Int       @id @unique @default(autoincrement())
+  createdAt  DateTime  @default(now())
+  name       String?   @db.VarChar(255)
+  createdBy  User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId    Int
   tasks      Task[]
-  completed  Boolean  @default(false)
-  time       String   @db.VarChar(10)
-  isTemplate Boolean  @default(false)
+  completed  Boolean   @default(false)
+  time       String    @unique @db.VarChar(10)
+  isTemplate Boolean   @default(false)
+  Template   Template? @ignore
 
   @@index([ownerId, id, time, isTemplate])
 }
 
 model Task {
-  id         Int       @id @unique @default(autoincrement())
-  createdAt  DateTime  @default(now())
-  name       String    @db.VarChar(255)
-  note       String?   @db.VarChar(255)
-  time       String?   @db.VarChar(10)
-  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId    Int
-  rountine   rountine? @relation(fields: [rountineId], references: [id])
-  rountineId Int?
+  id        Int      @id @unique @default(autoincrement())
+  createdAt DateTime @default(now())
+  name      String   @db.VarChar(255)
+  note      String?  @db.VarChar(255)
+  time      String?  @db.VarChar(10)
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId   Int
+  routine   routine? @relation(fields: [routineId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  routineId Int?
 
-  @@index([rountineId, id, time])
+  @@index([routineId, id, time])
   @@index([ownerId])
 }

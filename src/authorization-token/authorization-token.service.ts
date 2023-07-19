@@ -57,10 +57,8 @@ export class AuthorizationTokenService {
 
       if (databaseToken) {
         await this.database.invalidateAuthorizationToken(databaseToken.token);
-        // const tokenTime = new Date(databaseToken.expire);
         const isExpired = databaseToken.expire.getTime() - now.getTime() < 0;
 
-        console.log({ isExpired, dbTime: databaseToken.expire, now: now });
         if (isExpired) {
           return {
             error: 'Permission not granted',

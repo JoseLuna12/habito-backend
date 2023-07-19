@@ -8,6 +8,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TokensModule } from './tokens/tokens.module';
 import { AuthorizationTokenModule } from './authorization-token/authorization-token.module';
+import { RoutinesModule } from './routines/routines.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthorizationTokenModule } from './authorization-token/authorization-to
     PrismaModule,
     TokensModule,
     AuthorizationTokenModule,
+    RoutinesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

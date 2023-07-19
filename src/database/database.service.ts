@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AuthorizationToken, Prisma, Task, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { nanoid } from 'nanoid';
+import { RoutineDto } from 'src/routines/dto/routine.dto';
 
 @Injectable()
 export class DatabaseService {
@@ -141,6 +142,48 @@ export class DatabaseService {
       select: {
         id: true,
       },
+    });
+  }
+
+  createRoutine(routine: RoutineDto, user: number) {
+    const { tasks, ...routineData } = routine;
+    const tasksToCreate = tasks.map((t) => {
+      return {
+        ...t,
+        ownerId: user,
+      };
+    });
+    return this.prisma.routine.create({
+      data: {
+        ...routineData,
+        createdBy: {
+          connect: {
+            id: user,
+          },
+        },
+        tasks: {
+          createMany: {
+            data: tasksToCreate,
+          },
+        },
+      },
+      include: {
+        tasks: true,
+      },
+    });
+  }
+
+  updateRoutine(
+    routine: Omit<Partial<RoutineDto>, 'tasks' | 'time'> & { id: number },
+    user: number,
+  ) {
+    const { id, ...data } = routine;
+    return this.prisma.routine.update({
+      where: {
+        id,
+        ownerId: user,
+      },
+      data,
     });
   }
 }

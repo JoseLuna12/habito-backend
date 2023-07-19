@@ -16,6 +16,7 @@ import { JaiValidationPipe } from 'src/pipes/validation.pipe';
 import { TaskDto, createTaskSchema, updateTaskSchema } from './dto/task.dto';
 import { Response } from 'express';
 import { AuthenticationGuard } from 'src/guards/Authentication.guard';
+import { GetTaskValidation } from 'src/pipes/get-tasks.validation.pipe';
 @Controller('tasks')
 @UseGuards(AuthenticationGuard)
 export class TasksController {
@@ -54,7 +55,7 @@ export class TasksController {
   @Get('/many/:taskday')
   async tasksByDay(
     @Headers('user-email') email: string,
-    @Param('taskday') day: string,
+    @Param('taskday', GetTaskValidation) day: string,
     @Res() res: Response,
   ) {
     const tasks = await this.service.getTasksByDay(day, email);
