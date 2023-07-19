@@ -23,7 +23,6 @@ export class DatabaseService {
   }
 
   getAuthorizationToken(userId: number, token: string) {
-    const now = new Date();
     return this.prisma.authorizationToken.findUnique({
       where: {
         token,
@@ -33,11 +32,6 @@ export class DatabaseService {
               equals: true,
             },
           },
-          // {
-          //   expire: {
-          //     lt: now,
-          //   },
-          // },
           {
             used: {
               equals: false,
