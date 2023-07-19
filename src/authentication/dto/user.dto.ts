@@ -1,5 +1,12 @@
 import * as Joi from 'joi';
 
+export const updateUserSchema = Joi.object({
+  name: Joi.string().optional(),
+  email: Joi.string().email().optional(),
+}).options({
+  abortEarly: false,
+});
+
 export const createUserSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),

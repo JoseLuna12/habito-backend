@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model AuthorizationToken {
+  token       String   @id @unique @db.VarChar(32)
+  generatedBy User     @relation(fields: [userId], references: [id])
+  userId      Int
+  used        Boolean  @default(false)
+  active      Boolean  @default(true)
+  expire      DateTime @default(now())
+
+  @@index([userId, token, active, expire])
+}
+
+model User {
+  id                 Int                  @id @unique @default(autoincrement())
+  createdAt          DateTime             @default(now())
+  name               String               @db.VarChar(255)
+  email              String               @unique
+  password           String
+  tasks              Task[]
+  rountine           rountine[]
+  AuthorizationToken AuthorizationToken[]
+
+  @@index([id, email])
+}
+
+model rountine {
+  id         Int      @id @unique @default(autoincrement())
+  createdAt  DateTime @default(now())
+  name       String?  @db.VarChar(255)
+  createdBy  User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    Int
+  tasks      Task[]
+  completed  Boolean  @default(false)
+  time       String   @db.VarChar(10)
+  isTemplate Boolean  @default(false)
+
+  @@index([ownerId, id, time, isTemplate])
+}
+
+model Task {
+  id         Int       @id @unique @default(autoincrement())
+  createdAt  DateTime  @default(now())
+  name       String    @db.VarChar(255)
+  note       String?   @db.VarChar(255)
+  time       String?   @db.VarChar(10)
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    Int
+  rountine   rountine? @relation(fields: [rountineId], references: [id])
+  rountineId Int?
+
+  @@index([rountineId, id, time])
+  @@index([ownerId])
+}

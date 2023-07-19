@@ -1,15 +1,24 @@
 import {
   Body,
   Controller,
+  Headers,
   HttpException,
   Post,
+  Put,
   Res,
+  UseGuards,
   UsePipes,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { Response } from 'express';
 import { JaiValidationPipe } from '../pipes/validation.pipe';
-import { UserDto, createUserSchema, loginUserSchema } from './dto/user.dto';
+import {
+  UserDto,
+  createUserSchema,
+  loginUserSchema,
+  updateUserSchema,
+} from './dto/user.dto';
+import { AuthenticationGuard } from 'src/guards/Authentication.guard';
 
 @Controller('authentication')
 export class AuthenticationController {
@@ -17,13 +26,38 @@ export class AuthenticationController {
 
   @Post('/new')
   @UsePipes(new JaiValidationPipe(createUserSchema))
-  async newUser(@Body() newUser: UserDto) {
+  async newUser(@Body() newUser: UserDto, @Res() res: Response) {
     const user = await this.authService.createUser({
       name: newUser.name,
       email: newUser.email,
       password: newUser.password,
     });
-    return user;
+    if (user.error) {
+      throw new HttpException(`${user.error} ${user.message}`, user.status);
+    }
+
+    res.status(user.status).json(user.data);
+  }
+
+  @Put('/user')
+  @UseGuards(AuthenticationGuard)
+  @UsePipes(new JaiValidationPipe(updateUserSchema))
+  async updateUser(
+    @Body() updateUser: Pick<UserDto, 'name' | 'email'>,
+    @Res() res: Response,
+    @Headers('user-id') id: number,
+    @Headers('authorize-changes-token') authorizationToken?: string,
+  ) {
+    const user = await this.authService.updateUser({
+      ...updateUser,
+      id,
+      authorization: authorizationToken,
+    });
+    if (user.error) {
+      throw new HttpException(`${user.error} ${user.message}`, user.status);
+    }
+
+    res.status(user.status).json(user.data);
   }
 
   @Post('/login')
@@ -39,10 +73,10 @@ export class AuthenticationController {
 
     if (credentials.error) {
       throw new HttpException(
-        `${credentials.error}: ${credentials.description}`,
+        `${credentials.error}: ${credentials.message}`,
         credentials.status,
       );
     }
-    res.status(credentials.status).json({ secret: credentials.secret });
+    res.status(credentials.status).json(credentials);
   }
 }

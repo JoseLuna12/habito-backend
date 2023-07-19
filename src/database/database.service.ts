@@ -1,94 +1,146 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  Client,
-  Collection,
-  CreateCollection,
-  CreateIndex,
-  CurrentIdentity,
-  Delete,
-  Get,
-  Index,
-  Match,
-  Paginate,
-} from 'faunadb';
+import { AuthorizationToken, Prisma, Task, User } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { nanoid } from 'nanoid';
+
 @Injectable()
 export class DatabaseService {
-  constructor(private configService: ConfigService) {}
+  constructor(private prisma: PrismaService) {}
 
-  private serverkey = this.configService.get<string>('FAUNA_SERVER_SECRET');
-  private faunaClient: Client | null = null;
+  generateAuthorizationToken(userId: number): Promise<AuthorizationToken> {
+    const time = new Date();
+    time.setHours(time.getHours() + 1);
 
-  getFaunaInstance(userToken?: string): Client {
-    if (userToken) {
-      return new Client({ secret: userToken });
+    const token = nanoid(30);
+
+    return this.prisma.authorizationToken.create({
+      data: {
+        token,
+        expire: time,
+        userId,
+      },
+    });
+  }
+
+  getAuthorizationToken(userId: number, token: string) {
+    return this.prisma.authorizationToken.findUnique({
+      where: {
+        token,
+        AND: [
+          {
+            active: {
+              equals: true,
+            },
+          },
+          {
+            used: {
+              equals: false,
+            },
+          },
+        ],
+        userId,
+      },
+    });
+  }
+
+  invalidateAuthorizationToken(token: string) {
+    return this.prisma.authorizationToken.update({
+      where: {
+        token,
+      },
+      data: {
+        active: false,
+        used: true,
+      },
+    });
+  }
+
+  createUser(data: Prisma.UserCreateInput): Promise<User> {
+    return this.prisma.user.create({ data });
+  }
+
+  createTask(data: Prisma.TaskCreateInput): Promise<Task> {
+    return this.prisma.task.create({ data });
+  }
+
+  getUserByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+  }
+
+  getUserById(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
+  getTasksByDay(day: string, user: string): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      where: {
+        owner: {
+          email: user,
+        },
+        time: day,
+      },
+    });
+  }
+
+  getTasksByUser(user: string, take = 100, skip = 0): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      where: {
+        owner: {
+          email: user,
+        },
+      },
+      orderBy: {
+        createdAt: Prisma.SortOrder.desc,
+      },
+      take,
+      skip,
+    });
+  }
+
+  updateUser(
+    user: Partial<Pick<User, 'name' | 'email'>> & { id: number },
+  ): Promise<{ id: number }> {
+    const { id, ...userData } = user;
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: userData,
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  updateTaskById(
+    task: Partial<Pick<Task, 'name' | 'note'>> & { id: number },
+    user: string,
+  ): Promise<{ id: number }> {
+    if (!task.name && !task.note) {
+      return Promise.resolve({ id: task.id });
     }
-    if (this.faunaClient != null) {
-      return this.faunaClient;
-    }
-    this.faunaClient = new Client({ secret: this.serverkey });
-    return this.faunaClient;
-  }
-
-  createCollection(collection: string) {
-    const client = this.getFaunaInstance();
-    return client.query(CreateCollection({ name: collection }));
-  }
-
-  deleteCollection(collection: string) {
-    const client = this.getFaunaInstance();
-    return client.query(Delete(Collection(collection)));
-  }
-
-  createIndex(
-    collection: string,
-    unique: boolean,
-    data: { name: string; terms: string[][]; values?: string[][] },
-  ) {
-    const client = this.getFaunaInstance();
-    return client.query(
-      CreateIndex({
-        name: data.name,
-        unique,
-        source: Collection(collection),
-        terms: data.terms.map((term) => {
-          return {
-            field: term,
-          };
-        }),
-        values: data.values?.map((field) => {
-          return {
-            field: field,
-          };
-        }),
-      }),
-    );
-  }
-
-  deleteIndex(index: string) {
-    const client = this.getFaunaInstance();
-    return client.query(Delete(Index(index)));
-  }
-
-  callIndex(index: string, value: string) {
-    const client = this.getFaunaInstance();
-    return client.query(Paginate(Match(Index(index), value)));
-  }
-
-  async getIdentityFromClient(userClient: Client) {
-    const userRef = await userClient.query(CurrentIdentity());
-    if (userRef) {
-      return userClient.query(Get(userRef));
-    }
-    return {};
-  }
-
-  async seedUsers() {
-    await this.createCollection('users');
-    await this.createIndex('users', true, {
-      name: 'get_users_by_email',
-      terms: [['data', 'email']],
-      values: [],
+    return this.prisma.task.update({
+      where: {
+        id: task.id,
+        owner: {
+          email: user,
+        },
+      },
+      data: {
+        name: task.name,
+        note: task.note,
+      },
+      select: {
+        id: true,
+      },
     });
   }
 }
