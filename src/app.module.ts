@@ -7,6 +7,7 @@ import { AuthenticationModule } from './authentication/authentication.module';
 import { TasksModule } from './tasks/tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TokensModule } from './tokens/tokens.module';
+import { AuthorizationTokenModule } from './authorization-token/authorization-token.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { TokensModule } from './tokens/tokens.module';
     TasksModule,
     PrismaModule,
     TokensModule,
+    AuthorizationTokenModule,
   ],
   controllers: [AppController],
   providers: [AppService],

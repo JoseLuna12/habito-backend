@@ -8,6 +8,12 @@ export const createTaskSchema = Joi.object({
   note: Joi.string().optional(),
 }).options({ abortEarly: false });
 
+export const updateTaskSchema = Joi.object({
+  id: Joi.number().required(),
+  name: Joi.string().optional(),
+  note: Joi.string().optional(),
+}).options({ abortEarly: false });
+
 export interface TaskDto {
   name: string;
   time: string;

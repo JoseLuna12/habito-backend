@@ -4,12 +4,13 @@ import { UserDto } from './dto/user.dto';
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
 import { TokensService } from 'src/tokens/tokens.service';
+import { AuthorizationTokenService } from 'src/authorization-token/authorization-token.service';
 
 type AuthenticationResponse<T> = {
   data?: T;
   secret?: string;
   error?: string;
-  description?: string;
+  message?: string;
   status: HttpStatus;
 };
 
@@ -18,8 +19,67 @@ export class AuthenticationService {
   constructor(
     private database: DatabaseService,
     private tokenService: TokensService,
+    private authorizationToken: AuthorizationTokenService,
   ) {}
   private static saltRounds = 10;
+
+  async updateUser(
+    user: Pick<UserDto, 'email' | 'name'> & {
+      id: number;
+      authorization?: string;
+    },
+  ): Promise<AuthenticationResponse<{ id: number }>> {
+    console.log({ user });
+    if (user.email && !user.authorization) {
+      return {
+        error: 'Can not update',
+        message: 'not enough permission to perform update',
+        status: HttpStatus.FORBIDDEN,
+      };
+    }
+
+    if (user.email && user.authorization) {
+      const permission = await this.authorizationToken.checkAuthorizationToken(
+        user.id,
+        user.authorization,
+      );
+
+      if (permission.error) {
+        return {
+          error: permission.error,
+          message: permission.message,
+          status: permission.status,
+        };
+      }
+
+      if (!permission.data.permissionGranted) {
+        return {
+          error: 'Can not update',
+          message: 'not enough permission to perform update',
+          status: HttpStatus.FORBIDDEN,
+        };
+      }
+    }
+
+    try {
+      const { authorization, ...userData } = user;
+
+      const { id: updatedId } = await this.database.updateUser(userData);
+      if (updatedId) {
+        return {
+          data: { id: updatedId },
+          status: HttpStatus.OK,
+        };
+      }
+    } catch (err) {
+      console.log(err);
+      return {
+        error: `${err.name}:`,
+        message: 'Could not update user',
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
 
   async createUser(user: UserDto): Promise<AuthenticationResponse<User>> {
     try {
@@ -28,7 +88,7 @@ export class AuthenticationService {
       if (userExists) {
         return {
           error: 'User already exists',
-          description: 'Email already exits',
+          message: 'Email already exits',
           status: HttpStatus.BAD_REQUEST,
         };
       }
@@ -48,10 +108,15 @@ export class AuthenticationService {
     } catch (err) {
       return {
         error: 'unknown',
-        description: 'Error',
+        message: 'Error',
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       };
     }
+  }
+
+  async comparePasswords(userPassword: string, dbPassword: string) {
+    const matchedPassword = await bcrypt.compare(userPassword, dbPassword);
+    return matchedPassword;
   }
 
   async loginUser(
@@ -62,18 +127,18 @@ export class AuthenticationService {
     if (!userRef) {
       return {
         error: 'not found',
-        description: 'email does not exists',
+        message: 'email does not exists',
         status: HttpStatus.NOT_FOUND,
       };
     }
 
     const { password, ...userReturned } = userRef;
-    const matchPassword = await bcrypt.compare(user.password, password);
+    const matchPassword = this.comparePasswords(user.password, password);
 
     if (!matchPassword) {
       return {
         error: 'Bad credentials',
-        description: 'Email or password incorrect',
+        message: 'Email or password incorrect',
         status: HttpStatus.FORBIDDEN,
       };
     }

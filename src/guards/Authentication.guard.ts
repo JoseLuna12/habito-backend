@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { TokensService } from 'src/tokens/tokens.service';
 

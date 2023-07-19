@@ -14,6 +14,27 @@ type TaskResponse<T> = {
 export class TasksService {
   constructor(private database: DatabaseService) {}
 
+  async updateTask(
+    task: Partial<TaskDto> & { id: number },
+    user: string,
+  ): Promise<TaskResponse<Partial<TaskDto> & { id: number }>> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { time, ...taskToUpdate } = task;
+    try {
+      const { id } = await this.database.updateTaskById(taskToUpdate, user);
+      return {
+        data: { ...task, id },
+        status: HttpStatus.OK,
+      };
+    } catch (err) {
+      return {
+        error: `${err.name}:`,
+        message: 'Could not update task',
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
+
   async createNewTask(
     newTask: TaskDto,
     user: string,
