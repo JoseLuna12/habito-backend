@@ -1,8 +1,10 @@
+// 'use strict';
 import { Injectable } from '@nestjs/common';
 import { AuthorizationToken, Prisma, Task, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { nanoid } from 'nanoid';
 import { RoutineDto } from 'src/routines/dto/routine.dto';
+import { TaskDto } from 'src/tasks/dto/task.dto';
 
 @Injectable()
 export class DatabaseService {
@@ -146,16 +148,18 @@ export class DatabaseService {
   }
 
   createRoutine(routine: RoutineDto, user: number) {
-    const { tasks, ...routineData } = routine;
+    const { tasks, time, ...routineData } = routine;
     const tasksToCreate = tasks.map((t) => {
       return {
         ...t,
         ownerId: user,
+        time,
       };
     });
     return this.prisma.routine.create({
       data: {
         ...routineData,
+        time,
         createdBy: {
           connect: {
             id: user,
@@ -184,6 +188,138 @@ export class DatabaseService {
         ownerId: user,
       },
       data,
+    });
+  }
+
+  createTemplateFromRoutine(routineId: number, user: number) {
+    return this.prisma.$transaction(async (tx) => {
+      try {
+        const foundroutine = await tx.routine.findUnique({
+          where: { id: routineId },
+          include: { tasks: true },
+        });
+
+        if (!foundroutine) {
+          throw new Error('Routine does not exists');
+        }
+
+        const { tasks, ...routine } = foundroutine;
+
+        const tasksToCreate = tasks.map<TaskDto & { ownerId: number }>((t) => {
+          return {
+            name: t.name,
+            time: nanoid(10),
+            note: t.note,
+            ownerId: user,
+          };
+        });
+
+        const newRoutine: Pick<RoutineDto, 'name' | 'time'> = {
+          name: routine.name || 'New routine',
+          time: nanoid(10),
+        };
+
+        const template = await tx.template.create({
+          data: {
+            createdBy: {
+              connect: {
+                id: user,
+              },
+            },
+            routine: {
+              create: {
+                ...newRoutine,
+                isTemplate: true,
+                completed: false,
+                createdBy: {
+                  connect: {
+                    id: user,
+                  },
+                },
+                tasks: {
+                  createMany: {
+                    data: tasksToCreate,
+                  },
+                },
+              },
+            },
+          },
+          include: {
+            routine: {
+              include: { tasks: true },
+            },
+          },
+        });
+        return template;
+      } catch (err) {
+        throw err;
+      }
+    });
+  }
+
+  createRoutineFromTemplate(templateId: number, user: number, forDate: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const foundTemplate = await tx.template.findUnique({
+        where: {
+          id: templateId,
+        },
+        include: {
+          routine: {
+            include: {
+              tasks: true,
+            },
+          },
+        },
+      });
+      if (!foundTemplate) {
+        throw new Error('Template does not exists');
+      }
+
+      const { routine: routineData } = foundTemplate;
+
+      const oldRoutine = await tx.routine.findUnique({
+        where: { time: forDate },
+      });
+
+      if (oldRoutine) {
+        throw new Error('Already a routine on that day');
+      }
+
+      const { tasks, ...routine } = routineData;
+
+      const newRoutine: Pick<RoutineDto, 'name' | 'time'> = {
+        name: routine.name,
+        time: forDate,
+      };
+
+      const newTasks = tasks.map<TaskDto & { ownerId: number }>((t) => {
+        return {
+          name: t.name,
+          time: forDate,
+          note: t.note,
+          ownerId: user,
+        };
+      });
+
+      const newRoutineCreated = await tx.routine.create({
+        data: {
+          ...newRoutine,
+          createdBy: {
+            connect: {
+              id: user,
+            },
+          },
+          tasks: {
+            createMany: {
+              data: newTasks,
+            },
+          },
+        },
+        include: {
+          tasks: true,
+        },
+      });
+      return newRoutineCreated;
     });
   }
 }

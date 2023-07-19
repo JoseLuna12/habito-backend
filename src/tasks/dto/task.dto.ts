@@ -17,5 +17,5 @@ export const updateTaskSchema = Joi.object({
 export interface TaskDto {
   name: string;
   time: string;
-  note: string;
+  note?: string;
 }

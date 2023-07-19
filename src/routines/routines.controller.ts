@@ -12,7 +12,12 @@ import {
 import { RoutinesService } from './routines.service';
 import { AuthenticationGuard } from 'src/guards/Authentication.guard';
 import { JaiValidationPipe } from 'src/pipes/validation.pipe';
-import { RoutineDto, createRoutineEschema } from './dto/routine.dto';
+import {
+  RoutineDto,
+  createRoutineEschema,
+  createRoutineFromTemplateSchema,
+  createTemplateFromRoutineSchema,
+} from './dto/routine.dto';
 import { Response } from 'express';
 
 @Controller('routines')
@@ -51,5 +56,48 @@ export class RoutinesController {
     }
 
     res.status(routineUpdated.status).json(routineUpdated.data);
+  }
+
+  @Post('template')
+  @UsePipes(new JaiValidationPipe(createTemplateFromRoutineSchema))
+  async createTemplateFromRoutine(
+    @Headers('user-id') userId: number,
+    @Body() body: { routineId: number },
+    @Res() res: Response,
+  ) {
+    const template = await this.service.transformRoutineToTemplate(
+      body.routineId,
+      userId,
+    );
+    if (template.error) {
+      throw new HttpException(
+        `${template.error} ${template.message}`,
+        template.status,
+      );
+    }
+
+    res.status(template.status).json(template.data);
+  }
+
+  @Post('fromtemplate')
+  @UsePipes(new JaiValidationPipe(createRoutineFromTemplateSchema))
+  async createRoutineFromTemplate(
+    @Headers('user-id') userId: number,
+    @Body() body: { templateId: number; time: string },
+    @Res() res: Response,
+  ) {
+    const template = await this.service.transformTemplateToRoutine(
+      body.templateId,
+      userId,
+      body.time,
+    );
+    if (template.error) {
+      throw new HttpException(
+        `${template.error} ${template.message}`,
+        template.status,
+      );
+    }
+
+    res.status(template.status).json(template.data);
   }
 }

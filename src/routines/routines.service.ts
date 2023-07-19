@@ -21,7 +21,7 @@ export class RoutinesService {
   ): Promise<RoutineResponse<AddId<RoutineDto>>> {
     try {
       const newRoutine = await this.database.createRoutine(routine, user);
-      if (newRoutine?.id) {
+      if (newRoutine) {
         return {
           data: newRoutine,
           status: HttpStatus.CREATED,
@@ -31,6 +31,49 @@ export class RoutinesService {
       return {
         error: `${err.name}:`,
         message: 'Could not create routine',
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
+
+  async transformRoutineToTemplate(routineId: number, user: number) {
+    try {
+      const template = await this.database.createTemplateFromRoutine(
+        routineId,
+        user,
+      );
+      return {
+        data: template,
+        status: HttpStatus.CREATED,
+      };
+    } catch (err) {
+      return {
+        error: 'Could not create routine from template:',
+        message: `${err.message}`,
+        status: HttpStatus.BAD_REQUEST,
+      };
+    }
+  }
+
+  async transformTemplateToRoutine(
+    templateId: number,
+    user: number,
+    time: string,
+  ) {
+    try {
+      const routine = await this.database.createRoutineFromTemplate(
+        templateId,
+        user,
+        time,
+      );
+      return {
+        data: routine,
+        status: HttpStatus.CREATED,
+      };
+    } catch (err) {
+      return {
+        error: 'Could not create template from routine:',
+        message: `${err.message}`,
         status: HttpStatus.BAD_REQUEST,
       };
     }

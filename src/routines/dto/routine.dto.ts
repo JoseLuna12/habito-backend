@@ -16,6 +16,17 @@ export const updateRoutineEschema = Joi.object({
   completed: Joi.bool().optional(),
 }).options({ abortEarly: false });
 
+export const createTemplateFromRoutineSchema = Joi.object({
+  routineId: Joi.number().integer().options({ convert: false }).required(),
+}).options({ abortEarly: false });
+
+export const createRoutineFromTemplateSchema = Joi.object({
+  templateId: Joi.number().integer().options({ convert: false }).required(),
+  time: Joi.string()
+    .regex(new RegExp(/^(\d{2}):(\d{2}):(\d{4})$/))
+    .required(),
+}).options({ abortEarly: false });
+
 export interface RoutineDto {
   name: string;
   tasks: TaskDto[];
