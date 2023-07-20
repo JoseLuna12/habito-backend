@@ -19,6 +19,7 @@ import {
   updateUserSchema,
 } from './dto/user.dto';
 import { AuthenticationGuard } from 'src/guards/Authentication.guard';
+import { AuthorizationTokenGuard } from 'src/guards/Authorization-token.guard';
 
 @Controller('authentication')
 export class AuthenticationController {
@@ -41,12 +42,13 @@ export class AuthenticationController {
 
   @Put('/user')
   @UseGuards(AuthenticationGuard)
+  @UseGuards(AuthorizationTokenGuard)
   @UsePipes(new JaiValidationPipe(updateUserSchema))
   async updateUser(
     @Body() updateUser: Pick<UserDto, 'name' | 'email'>,
     @Res() res: Response,
     @Headers('user-id') id: number,
-    @Headers('authorize-changes-token') authorizationToken?: string,
+    @Headers('authorize-changes-token') authorizationToken: string,
   ) {
     const user = await this.authService.updateUser({
       ...updateUser,

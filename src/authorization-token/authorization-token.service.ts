@@ -13,6 +13,23 @@ type AuthTokenResponse<T> = {
 export class AuthorizationTokenService {
   constructor(private database: DatabaseService) {}
 
+  async validateTokenNonDestructiveGuard(token: string) {
+    const authToken = await this.database.getAuthorizationTokenOnlyById(token);
+    if (!authToken) {
+      return false;
+    }
+
+    if (this.isTokenExpired(authToken.expire)) {
+      return false;
+    }
+
+    return authToken.active;
+  }
+
+  isTokenExpired(tokenExpTime: Date): boolean {
+    const now = new Date();
+    return tokenExpTime.getTime() - now.getTime() < 0;
+  }
   async generateAuthorizationTokeForUser(
     user: number,
     password: string,
@@ -47,42 +64,40 @@ export class AuthorizationTokenService {
     user: number,
     token: string,
   ): Promise<AuthTokenResponse<{ permissionGranted: boolean }>> {
-    const now = new Date();
-
     try {
       const databaseToken = await this.database.getAuthorizationToken(
         user,
         token,
       );
 
-      if (databaseToken) {
-        await this.database.invalidateAuthorizationToken(databaseToken.token);
-        const isExpired = databaseToken.expire.getTime() - now.getTime() < 0;
-
-        if (isExpired) {
-          return {
-            error: 'Permission not granted',
-            message: 'Permission tonken is expired',
-            status: HttpStatus.FORBIDDEN,
-          };
-        }
-
-        return {
-          data: { permissionGranted: true },
-          status: HttpStatus.ACCEPTED,
-        };
-      } else {
+      if (!databaseToken) {
         return {
           error: 'Permission not granted',
           message: 'Permission tonken was invalid',
           status: HttpStatus.FORBIDDEN,
         };
       }
+
+      await this.database.invalidateAuthorizationToken(databaseToken.token);
+      const isExpired = this.isTokenExpired(databaseToken.expire);
+
+      if (isExpired) {
+        return {
+          error: 'Permission not granted',
+          message: 'Permission tonken is expired',
+          status: HttpStatus.FORBIDDEN,
+        };
+      }
+
+      return {
+        data: { permissionGranted: true },
+        status: HttpStatus.ACCEPTED,
+      };
     } catch (err) {
       return {
         error: `${err.name}:`,
-        message: 'Could not create auth token',
-        status: HttpStatus.BAD_REQUEST,
+        message: 'Could not get auth token',
+        status: HttpStatus.FORBIDDEN,
       };
     }
   }

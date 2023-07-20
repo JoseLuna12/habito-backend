@@ -32,6 +32,14 @@ export class DatabaseService {
     });
   }
 
+  getAuthorizationTokenOnlyById(token: string) {
+    return this.prisma.authorizationToken.findUnique({
+      where: {
+        token,
+      },
+    });
+  }
+
   getAuthorizationToken(userId: number, token: string) {
     return this.prisma.authorizationToken.findUnique({
       where: {
@@ -65,8 +73,13 @@ export class DatabaseService {
     });
   }
 
-  createUser(data: Prisma.UserCreateInput): Promise<User> {
-    return this.prisma.user.create({ data });
+  createUser(
+    data: Prisma.UserCreateInput,
+  ): Promise<Pick<User, 'id' | 'email' | 'name'>> {
+    return this.prisma.user.create({
+      data,
+      select: { id: true, email: true, name: true },
+    });
   }
 
   findUserByEmail(email: string): Promise<User | null> {

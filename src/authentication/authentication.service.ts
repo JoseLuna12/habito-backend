@@ -26,7 +26,7 @@ export class AuthenticationService {
   async updateUser(
     user: Pick<UserDto, 'email' | 'name'> & {
       id: number;
-      authorization?: string;
+      authorization: string;
     },
   ): Promise<AuthenticationResponse<{ id: number }>> {
     if (user.email && !user.authorization) {
@@ -89,7 +89,9 @@ export class AuthenticationService {
     }
   }
 
-  async createUser(user: UserDto): Promise<AuthenticationResponse<User>> {
+  async createUser(
+    user: UserDto,
+  ): Promise<AuthenticationResponse<Pick<User, 'id' | 'email' | 'name'>>> {
     try {
       const userExists = await this.database.getUserByEmail(user.email);
 
@@ -141,7 +143,7 @@ export class AuthenticationService {
     }
 
     const { password, ...userReturned } = userRef;
-    const matchPassword = this.comparePasswords(user.password, password);
+    const matchPassword = await this.comparePasswords(user.password, password);
 
     if (!matchPassword) {
       return {
