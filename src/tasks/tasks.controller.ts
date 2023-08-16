@@ -37,10 +37,10 @@ export class TasksController {
   ) {
     const task = await this.service.updateTask(body, email);
     if (task.error) {
-      throw new HttpException(`${task.error} ${task.message}`, task.status);
+      throw new HttpException(`${task.error} ${task.message}`, task.statusCode);
     }
 
-    res.status(task.status).send(task.data);
+    res.status(task.statusCode).send(task);
   }
 
   @Delete()
@@ -52,10 +52,10 @@ export class TasksController {
   ) {
     const task = await this.service.deleteTask(body.taskId, id);
     if (task.error) {
-      throw new HttpException(`${task.error} ${task.message}`, task.status);
+      throw new HttpException(`${task.error} ${task.message}`, task.statusCode);
     }
 
-    res.status(task.status).send(task.data);
+    res.status(task.statusCode).send(task);
   }
 
   @Post('/new')
@@ -67,10 +67,10 @@ export class TasksController {
   ) {
     const task = await this.service.createNewTask(body, email);
     if (task.error) {
-      throw new HttpException(`${task.error} ${task.message}`, task.status);
+      throw new HttpException(`${task.error} ${task.message}`, task.statusCode);
     }
 
-    res.status(task.status).send(task.data);
+    res.status(task.statusCode).send(task);
   }
 
   @Get('/many/:taskday')
@@ -82,10 +82,13 @@ export class TasksController {
     const tasks = await this.service.getTasksByDay(day, email);
 
     if (tasks.error) {
-      throw new HttpException(`${tasks.error} ${tasks.message}`, tasks.status);
+      throw new HttpException(
+        `${tasks.error} ${tasks.message}`,
+        tasks.statusCode,
+      );
     }
 
-    res.status(tasks.status).json(tasks.data);
+    res.status(tasks.statusCode).json(tasks);
   }
 
   @Get('/byuser')
@@ -96,9 +99,12 @@ export class TasksController {
     const tasks = await this.service.getTasksByUser(email);
 
     if (tasks.error) {
-      throw new HttpException(`${tasks.error} ${tasks.message}`, tasks.status);
+      throw new HttpException(
+        `${tasks.error} ${tasks.message}`,
+        tasks.statusCode,
+      );
     }
 
-    res.status(tasks.status).json(tasks.data);
+    res.status(tasks.statusCode).json(tasks);
   }
 }

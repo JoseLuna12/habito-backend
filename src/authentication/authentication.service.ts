@@ -11,7 +11,7 @@ type AuthenticationResponse<T> = {
   secret?: string;
   error?: string;
   message?: string;
-  status: HttpStatus;
+  statusCode: HttpStatus;
 };
 
 @Injectable()
@@ -33,7 +33,7 @@ export class AuthenticationService {
       return {
         error: 'Can not update',
         message: 'not enough permission to perform update',
-        status: HttpStatus.FORBIDDEN,
+        statusCode: HttpStatus.FORBIDDEN,
       };
     }
 
@@ -43,7 +43,7 @@ export class AuthenticationService {
         return {
           error: 'email already in use:',
           message: `email '${emailExists.email}' is already taken`,
-          status: HttpStatus.BAD_REQUEST,
+          statusCode: HttpStatus.BAD_REQUEST,
         };
       }
 
@@ -56,7 +56,7 @@ export class AuthenticationService {
         return {
           error: permission.error,
           message: permission.message,
-          status: permission.status,
+          statusCode: permission.status,
         };
       }
 
@@ -64,7 +64,7 @@ export class AuthenticationService {
         return {
           error: 'Can not update',
           message: 'not enough permission to perform update',
-          status: HttpStatus.FORBIDDEN,
+          statusCode: HttpStatus.FORBIDDEN,
         };
       }
     }
@@ -77,14 +77,14 @@ export class AuthenticationService {
       if (updatedId) {
         return {
           data: { id: updatedId },
-          status: HttpStatus.OK,
+          statusCode: HttpStatus.OK,
         };
       }
     } catch (err) {
       return {
         error: `${err.name}:`,
         message: 'Could not update user',
-        status: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }
@@ -99,7 +99,7 @@ export class AuthenticationService {
         return {
           error: 'User already exists',
           message: 'Email already exits',
-          status: HttpStatus.BAD_REQUEST,
+          statusCode: HttpStatus.BAD_REQUEST,
         };
       }
 
@@ -111,15 +111,18 @@ export class AuthenticationService {
         password: hashedPassword,
       });
 
+      const token = this.tokenService.generateToken(newUser);
+
       return {
         data: newUser,
-        status: HttpStatus.CREATED,
+        secret: token,
+        statusCode: HttpStatus.CREATED,
       };
     } catch (err) {
       return {
         error: 'unknown',
         message: 'Error',
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -138,7 +141,7 @@ export class AuthenticationService {
       return {
         error: 'not found',
         message: 'email does not exists',
-        status: HttpStatus.NOT_FOUND,
+        statusCode: HttpStatus.NOT_FOUND,
       };
     }
 
@@ -149,7 +152,7 @@ export class AuthenticationService {
       return {
         error: 'Bad credentials',
         message: 'Email or password incorrect',
-        status: HttpStatus.FORBIDDEN,
+        statusCode: HttpStatus.FORBIDDEN,
       };
     }
 
@@ -158,7 +161,7 @@ export class AuthenticationService {
     return {
       data: userReturned,
       secret: token,
-      status: HttpStatus.OK,
+      statusCode: HttpStatus.OK,
     };
   }
 }

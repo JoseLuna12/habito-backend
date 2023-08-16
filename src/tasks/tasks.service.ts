@@ -7,7 +7,7 @@ type TaskResponse<T> = {
   data?: T;
   error?: string;
   message?: string;
-  status: HttpStatus;
+  statusCode: HttpStatus;
 };
 
 @Injectable()
@@ -19,13 +19,13 @@ export class TasksService {
       const deletedTask = await this.database.deleteTask(task, user);
       return {
         data: deletedTask,
-        status: HttpStatus.OK,
+        statusCode: HttpStatus.OK,
       };
     } catch (err) {
       return {
         error: `${err.name}:`,
         message: 'Could not delete task',
-        status: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }
@@ -40,13 +40,13 @@ export class TasksService {
       const { id } = await this.database.updateTaskById(taskToUpdate, user);
       return {
         data: { ...task, id },
-        status: HttpStatus.OK,
+        statusCode: HttpStatus.OK,
       };
     } catch (err) {
       return {
         error: `${err.name}:`,
         message: 'Could not update task',
-        status: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }
@@ -63,13 +63,13 @@ export class TasksService {
 
       return {
         data: task,
-        status: HttpStatus.CREATED,
+        statusCode: HttpStatus.CREATED,
       };
     } catch (err) {
       return {
         error: `${err.name}:`,
         message: 'Could not create task',
-        status: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }
@@ -83,13 +83,13 @@ export class TasksService {
 
       return {
         data: tasks,
-        status: HttpStatus.FOUND,
+        statusCode: HttpStatus.OK,
       };
     } catch (err) {
       return {
         error: `${err.name}:`,
         message: 'Could not found tasks for user',
-        status: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }
@@ -100,13 +100,13 @@ export class TasksService {
 
       return {
         data: tasks,
-        status: HttpStatus.FOUND,
+        statusCode: HttpStatus.OK,
       };
     } catch (err) {
       return {
         error: `${err.name}:`,
         message: 'Could not found tasks for user',
-        status: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
       };
     }
   }

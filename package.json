@@ -8,9 +8,13 @@
   "scripts": {
     "schema": "npx prisma db push",
     "schema:gen": "npx prisma db push && npx prisma generate",
-    "build": "nest build",
+    "prepare": "npm run build",
+    "pretest": "npm run build",
+    "build": "tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "deploy": "gcloud app deploy",
+    "start": "node ./dist/main.js",
+    "start:dev2": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -19,7 +23,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "gcp-build": "npm run build"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

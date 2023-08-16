@@ -34,10 +34,9 @@ export class AuthenticationController {
       password: newUser.password,
     });
     if (user.error) {
-      throw new HttpException(`${user.error} ${user.message}`, user.status);
+      throw new HttpException(`${user.error} ${user.message}`, user.statusCode);
     }
-
-    res.status(user.status).json(user.data);
+    res.status(user.statusCode).json(user);
   }
 
   @Put('/user')
@@ -56,10 +55,12 @@ export class AuthenticationController {
       authorization: authorizationToken,
     });
     if (user.error) {
-      throw new HttpException(`${user.error} ${user.message}`, user.status);
+      throw new HttpException(user.message, user.statusCode, {
+        cause: new Error(user.error),
+      });
     }
 
-    res.status(user.status).json(user.data);
+    res.status(user.statusCode).json(user);
   }
 
   @Post('/login')
@@ -68,17 +69,18 @@ export class AuthenticationController {
     @Body() request: Pick<UserDto, 'email' | 'password'>,
     @Res() res: Response,
   ) {
+    console.log('login in user', request);
     const credentials = await this.authService.loginUser({
       email: request.email,
       password: request.password,
     });
 
     if (credentials.error) {
-      throw new HttpException(
-        `${credentials.error}: ${credentials.message}`,
-        credentials.status,
-      );
+      throw new HttpException(credentials.message, credentials.statusCode, {
+        cause: new Error(credentials.error),
+        description: credentials.message,
+      });
     }
-    res.status(credentials.status).json(credentials);
+    res.status(credentials.statusCode).json(credentials);
   }
 }
